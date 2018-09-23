@@ -7,7 +7,7 @@ import "./ERC223ReceivingContract.sol";
 contract UniGoldToken is IERC223 {
     using SafeMath for uint256;
 
-    string private _name = "UniGold Coin";
+    string private _name = "UniGoldCoin";
     string private _symbol = "UGCС";
     uint8 private _decimals = 0;
 
