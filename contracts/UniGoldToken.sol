@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "./token/ERC20/BasicToken.sol";
 import "./ownership/Ownable.sol";
+import "./ERC223.sol";
 
-contract UniGoldToken is BasicToken, Ownable {
+contract UniGoldToken is ERC223, Ownable {
 
     string public name = "UniGoldCoin";
     string public symbol = "UGCС";
