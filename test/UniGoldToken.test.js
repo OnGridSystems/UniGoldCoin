@@ -80,44 +80,6 @@ contract('StandardToken', function ([_, owner, recipient, anotherAccount]) {
         });
     });
 
-    describe('transfer from', function () {
-        const spender = recipient;
 
-
-        describe('when the recipient is the zero address', function () {
-            const amount = 100;
-            const to = ZERO_ADDRESS;
-
-            it('reverts', async function () {
-                await assertRevert(this.token.transferFrom(owner, to, amount, {from: spender}));
-            });
-        });
-
-        describe('when the owner has enough balance', function () {
-          const amount = 100;
-          const to = anotherAccount;
-
-          it('transfers the requested amount', async function () {
-            await this.token.transferFrom(owner, to, amount, { from: spender });
-
-            const senderBalance = await this.token.balanceOf(owner);
-            assert.equal(senderBalance, 0);
-
-            const recipientBalance = await this.token.balanceOf(to);
-            assert.equal(recipientBalance, amount);
-          });
-
-
-          it('emits a transfer event', async function () {
-            const { logs } = await this.token.transferFrom(owner, to, amount, { from: spender });
-
-            assert.equal(logs.length, 1);
-            assert.equal(logs[0].event, 'Transfer');
-            assert.equal(logs[0].args.from, owner);
-            assert.equal(logs[0].args.to, to);
-            assert(logs[0].args.value.eq(amount));
-          });
-        });
-    });
 
 });
