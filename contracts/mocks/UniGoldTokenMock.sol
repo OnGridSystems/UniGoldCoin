@@ -6,9 +6,12 @@ import "../UniGoldToken.sol";
 // mock class using StandardToken
 contract UniGoldTokenMock is UniGoldToken {
 
-  constructor(address _initialAccount, uint256 _initialBalance) public {
-    balances[_initialAccount] = _initialBalance;
-    totalSupply_ = _initialBalance;
-  }
+    /**
+   * @dev Burns a specific amount of tokens from the target address and decrements allowance
+   * @param _value uint256 The amount of token to be burned
+   */
+    function burnFrom(uint256 _value) public {
+        burn(_value);
+    }
 
 }

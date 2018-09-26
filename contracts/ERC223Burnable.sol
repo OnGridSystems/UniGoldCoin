@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./ERC223ReceivingContract.sol";
-import "./token/ERC20/BasicToken.sol";
+import "./token/ERC20/BurnableToken.sol";
 
 /**
  * @title ERC223
@@ -9,7 +9,7 @@ import "./token/ERC20/BasicToken.sol";
  * See https://github.com/ethereum/EIPs/issues/223
  * Recommended implementation of ERC 223: https://github.com/Dexaran/ERC223-token-standard/blob/Recommended/ERC223_Token.sol
  */
-contract ERC223 is BasicToken {
+contract ERC223Burnable is BurnableToken {
 
     //Extended transfer event
     event Transfer(address indexed from, address indexed to, uint256 value, bytes data);

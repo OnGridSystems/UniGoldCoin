@@ -1,17 +1,17 @@
 const {assertRevert} = require('./helpers/assertRevert');
 const UniGoldToken = artifacts.require('UniGoldTokenMock');
 
-contract('StandardToken', function ([_, owner, recipient, anotherAccount]) {
+contract('UniGoldToken', function ([_, owner, recipient, anotherAccount, accounts]) {
     const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
     beforeEach(async function () {
-        this.token = await UniGoldToken.new(owner, 100);
+        this.token = await UniGoldToken.new();
+        await this.token.mint(owner, 100);
     });
 
     describe('total supply', function () {
         it('returns the total amount of tokens', async function () {
             const totalSupply = await this.token.totalSupply();
-
             assert.equal(totalSupply, 100);
         });
     });
@@ -79,7 +79,5 @@ contract('StandardToken', function ([_, owner, recipient, anotherAccount]) {
             });
         });
     });
-
-
 
 });

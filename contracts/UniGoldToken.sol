@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "./ownership/Ownable.sol";
-import "./ERC223.sol";
+import "./ERC223Burnable.sol";
 
-contract UniGoldToken is ERC223, Ownable {
+contract UniGoldToken is ERC223Burnable, Ownable {
 
     string public name = "UniGoldCoin";
     string public symbol = "UGCС";
