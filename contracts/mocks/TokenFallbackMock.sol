@@ -16,7 +16,6 @@ contract TokenFallbackMock {
      * @param _data Bytes The data passed from the caller.
      */
     function tokenFallback(address _from, uint _value, bytes _data) external {
-        from = _from;
         value = _value;
         data = _data;
     }

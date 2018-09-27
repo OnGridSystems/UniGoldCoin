@@ -1,17 +1,18 @@
 const {assertRevert} = require('./helpers/assertRevert');
-const UniGoldToken = artifacts.require('UniGoldTokenMock');
+const UniGoldToken = artifacts.require('UniGoldToken');
 const UniGoldCoinBurner = artifacts.require('UniGoldCoinBurner');
 
 contract('UniGoldToken', function ([_, owner, recipient, anotherAccount]) {
     const initialBalance = 1000;
+    const minter = owner;
 
     beforeEach(async function () {
-        this.token = await UniGoldToken.new();
-        await this.token.mint(owner, initialBalance);
+        this.token = await UniGoldToken.new(minter);
+        await this.token.mint(owner, initialBalance, {from: minter});
         this.tokenBurner = await UniGoldCoinBurner.new(this.token.address);
-        await this.token.transfer(anotherAccount, 101, {from: owner});
-        this.anotherToken = await UniGoldToken.new({anotherAccount});
-        await this.anotherToken.mint(anotherAccount, initialBalance);
+        await this.token.transfer(anotherAccount, 101, {from: minter});
+        this.anotherToken = await UniGoldToken.new(anotherAccount, {from: anotherAccount});
+        await this.anotherToken.mint(anotherAccount, initialBalance, {from: anotherAccount});
     });
 
     describe('burn 100 tokens', function () {

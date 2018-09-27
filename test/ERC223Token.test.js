@@ -1,5 +1,5 @@
 const {assertRevert} = require('./helpers/assertRevert');
-const ERC223Token = artifacts.require("UniGoldTokenMock");
+const ERC223Token = artifacts.require("ERC223Mock");
 const TokenFallbackMock = artifacts.require("TokenFallbackMock");
 const BigNumber = web3.BigNumber;
 require('chai')
@@ -7,9 +7,10 @@ require('chai')
     .should();
 
 // ERC223 contract token test
-contract('UniGoldTokenMock', async (accounts) => {
+contract('ERC223Token', async (accounts) => {
     // 5Billion * 10^18 Xti tokens as initial supply
-    const SUPPLY = 1000;
+    const initialSupply = 1000;
+    const ownerBalance = initialSupply;
     const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
     const ownerAddress = accounts[0];
     const anotherAccount = accounts[1];
@@ -21,54 +22,49 @@ contract('UniGoldTokenMock', async (accounts) => {
     // Create contract and token
     beforeEach(async function () {
         // Create the token with the preallocated supply and add all the tokens to ownerAddress
-        this.token = await ERC223Token.new();
+        this.token = await ERC223Token.new(initialSupply, ownerBalance);
         this.tokenFallbackMock = await TokenFallbackMock.new();
-        await this.token.mint(ownerAddress, SUPPLY);
     });
 
     describe('transfer()', function () {
-        // Transfer to the contract address will call the token fallback
-        it('should call token fallback and update mock state', async function () {
+        it('transfer to another address without data', async function () {
             let amount = 10;
-            const fallBackContract = this.tokenFallbackMock.address;
-
-            // Transfer without data
-            await this.token.transfer(fallBackContract, 10);
-
-            // Check that the mock fallback contract's state was updated
-            let value = await this.tokenFallbackMock.value();
-            assert.equal(value, amount);
-
-            let from = await this.tokenFallbackMock.from();
-            assert.equal(ownerAddress, from);
-
-            // Change amount for second test
-            amount = 100;
-
-            // Workaround for overloaded function until Truffle adds support.
-            // Must call contract with the function definition including parameters AND the from address included
-            await this.token.contract.transfer['address,uint256,bytes'](fallBackContract, amount, '', {from: ownerAddress});
-            // Check that the amount was updated
-            value = await this.tokenFallbackMock.value();
-            assert.equal(value, amount);
-
-            //To address
-            amount = 10;
-            // Transfer without data
             await this.token.transfer(anotherAccount, amount);
-
-            // Check balance
-            value = await this.token.balanceOf(anotherAccount);
+            let value = await this.token.balanceOf(anotherAccount);
             assert.equal(value, amount);
-
-            // Transfer with data
-            amount = 100;
-            await this.token.contract.transfer['address,uint256,bytes'](anotherAccount, amount, '', {from: ownerAddress});
-            value = await this.token.balanceOf(anotherAccount);
-            assert.equal(value, 110);
-
         });
 
+        it('transfer to another address with data', async function () {
+            let amount = 10;
+            await this.token.contract.transfer['address,uint256,bytes'](anotherAccount, amount, '', {from: ownerAddress});
+            let value = await this.token.balanceOf(anotherAccount);
+            assert.equal(value, amount);
+        });
+
+        it('transfer to contract address without data', async function () {
+            let amount = 10;
+            let fallBackContract = this.tokenFallbackMock.address;
+            await this.token.transfer(fallBackContract, amount);
+            let value = await this.tokenFallbackMock.value();
+            assert.equal(value, amount);
+        });
+
+        it('transfer to contract address with data', async function () {
+            let amount = 10;
+            let fallBackContract = this.tokenFallbackMock.address;
+            await this.token.contract.transfer['address,uint256,bytes'](fallBackContract, amount, '', {from: ownerAddress});
+            let value = await this.tokenFallbackMock.value();
+            assert.equal(value, amount);
+        });
+
+        describe('when the sender does not have enough balance', function () {
+            it('revert', async function () {
+                let amount = ownerBalance + 1;
+                let fallBackContract = this.tokenFallbackMock.address;
+                await assertRevert(this.token.transfer(anotherAccount, amount));
+                await assertRevert(this.token.transfer(fallBackContract, amount));
+            });
+        });
 
         describe('when the recipient is the zero address', function () {
             const to = ZERO_ADDRESS;
