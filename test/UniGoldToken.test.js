@@ -1,17 +1,18 @@
 const {assertRevert} = require('./helpers/assertRevert');
-const UniGoldToken = artifacts.require('UniGoldTokenMock');
+const UniGoldToken = artifacts.require('UniGoldToken');
 
-contract('StandardToken', function ([_, owner, recipient, anotherAccount]) {
+contract('UniGoldToken', function ([_, owner, recipient, anotherAccount, accounts]) {
     const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+    const minter = anotherAccount;
 
     beforeEach(async function () {
-        this.token = await UniGoldToken.new(owner, 100);
+        this.token = await UniGoldToken.new(minter, {from: owner});
+        await this.token.mint(owner, 100, {from: minter});
     });
 
     describe('total supply', function () {
         it('returns the total amount of tokens', async function () {
             const totalSupply = await this.token.totalSupply();
-
             assert.equal(totalSupply, 100);
         });
     });
@@ -73,51 +74,26 @@ contract('StandardToken', function ([_, owner, recipient, anotherAccount]) {
 
         describe('when the recipient is the zero address', function () {
             const to = ZERO_ADDRESS;
-
             it('reverts', async function () {
                 await assertRevert(this.token.transfer(to, 100, {from: owner}));
             });
         });
     });
 
-    describe('transfer from', function () {
-        const spender = recipient;
 
+    describe('minting', function () {
+       it('another account cant mint', async function () {
+           await assertRevert(this.token.mint(owner, 100, {from: owner}));
+       });
 
-        describe('when the recipient is the zero address', function () {
-            const amount = 100;
-            const to = ZERO_ADDRESS;
+       it('minter can mint', async function () {
+           const totalSupply = await this.token.totalSupply();
+           let amount = 100;
+           await this.token.mint(owner, amount, {from: minter});
+           let newSupply = await this.token.totalSupply();
+           assert.equal(newSupply, +totalSupply + +amount);
+       });
 
-            it('reverts', async function () {
-                await assertRevert(this.token.transferFrom(owner, to, amount, {from: spender}));
-            });
-        });
-
-        describe('when the owner has enough balance', function () {
-          const amount = 100;
-          const to = anotherAccount;
-
-          it('transfers the requested amount', async function () {
-            await this.token.transferFrom(owner, to, amount, { from: spender });
-
-            const senderBalance = await this.token.balanceOf(owner);
-            assert.equal(senderBalance, 0);
-
-            const recipientBalance = await this.token.balanceOf(to);
-            assert.equal(recipientBalance, amount);
-          });
-
-
-          it('emits a transfer event', async function () {
-            const { logs } = await this.token.transferFrom(owner, to, amount, { from: spender });
-
-            assert.equal(logs.length, 1);
-            assert.equal(logs[0].event, 'Transfer');
-            assert.equal(logs[0].args.from, owner);
-            assert.equal(logs[0].args.to, to);
-            assert(logs[0].args.value.eq(amount));
-          });
-        });
     });
 
 });

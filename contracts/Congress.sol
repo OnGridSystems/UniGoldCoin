@@ -1,18 +1,41 @@
 pragma solidity ^0.4.16;
 
 /**
- * @title UniGold mintable token interface
+ * @title Abstract contract where privileged method (minting) managed by governance
  */
-contract IUGCC {
-  function mint(address to, uint256 amount) public returns (bool) {
-      return(true);
-  }
+contract TokenStub {
+    bool public minted;
+    address public minter;
+    event Minted(address minter);
+
+    function mint() onlyMinter public returns (bool) {
+        minted = true;
+        emit Minted(msg.sender);
+        return true;
+    }
+
+    /**
+     * Constructor function
+     */
+    constructor (
+        address _minter
+    ) public {
+        minter = _minter;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the minter.
+     */
+    modifier onlyMinter() {
+        require(msg.sender == minter);
+        _;
+    }
 }
 
 
 /**
  * @title Congress contract
- * @dev based on congress contract from official Ethereum repo
+ * @dev idea based on congress contract from official Ethereum repo
  * See https://github.com/ethereum/ethereum-org/blob/master/solidity/dao-congress.sol
  */
 
@@ -21,7 +44,7 @@ contract Congress {
     mapping (address => bool) public voter;
     mapping (bytes32 => MintProposal) mintProposal;
     mapping (address => TrustRecord) public trustRegistry;
-    IUGCC public token;
+    TokenStub public token;
 
 
     event MintProposalAdded(bytes32 proposalHash, address to, uint amount, string batchCode);
@@ -56,7 +79,7 @@ contract Congress {
      * Constructor function
      */
     constructor (
-        IUGCC _token
+        TokenStub _token
     ) public {
         token = _token;
         voter[msg.sender] = true;
@@ -135,6 +158,8 @@ contract Congress {
             emit MintProposalVoted(proposalHash, msg.sender, mintProposal[proposalHash].numberOfVotes);
         }
         if (isMajority(mintProposal[proposalHash].numberOfVotes)) {
+            mintProposal[proposalHash].executed = true;
+            token.mint();
             emit MintProposalExecuted(proposalHash, to, amount, batchCode);
         }
         return(true);
