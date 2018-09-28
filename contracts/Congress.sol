@@ -1,16 +1,15 @@
 pragma solidity ^0.4.16;
 
 /**
- * @title Abstract contract where privileged method (minting) managed by governance
+ * @title Abstract contract where privileged minting managed by governance
  */
-contract TokenStub {
-    bool public minted;
+contract MintableTokenStub {
     address public minter;
-    event Minted(address minter);
+    event Mint(address indexed to, uint256 amount);
 
-    function mint() onlyMinter public returns (bool) {
-        minted = true;
-        emit Minted(msg.sender);
+    function mint(address _to, uint256 _amount) public onlyMinter returns (bool)
+    {
+        emit Mint(_to, _amount);
         return true;
     }
 
@@ -44,9 +43,9 @@ contract Congress {
     mapping (address => bool) public voter;
     mapping (bytes32 => MintProposal) mintProposal;
     mapping (address => TrustRecord) public trustRegistry;
-    TokenStub public token;
+    MintableTokenStub public token;
 
-
+    event TokenSet(address voter, address token);
     event MintProposalAdded(bytes32 proposalHash, address to, uint amount, string batchCode);
     event MintProposalVoted(bytes32 proposalHash, address voter, uint numberOfVotes);
     event MintProposalExecuted(bytes32 proposalHash, address to, uint amount, string batchCode);
@@ -78,16 +77,13 @@ contract Congress {
     /**
      * Constructor function
      */
-    constructor (
-        TokenStub _token
-    ) public {
-        token = _token;
+    constructor () public {
         voter[msg.sender] = true;
         voters = 1;
     }
 
 
-    function isMajority(uint256 votes) view returns (bool) {
+    function isMajority(uint256 votes) view public returns (bool) {
         // ToDo SafeMath
         return (votes >=  voters / 2 + 1);
     }
@@ -98,6 +94,7 @@ contract Congress {
 
     function trust(address _subject) onlyVoters public {
         require(msg.sender != _subject);
+        require(token != MintableTokenStub(0));
         if (!trustRegistry[_subject].trustedBy[msg.sender]) {
             trustRegistry[_subject].trustedBy[msg.sender] = true;
             trustRegistry[_subject].totalTrust += 1;
@@ -114,6 +111,7 @@ contract Congress {
     }
 
     function untrust(address _subject) onlyVoters public {
+        require(token != MintableTokenStub(0));
         if (trustRegistry[_subject].trustedBy[msg.sender]) {
             trustRegistry[_subject].trustedBy[msg.sender] = false;
             trustRegistry[_subject].totalTrust -= 1;
@@ -127,6 +125,18 @@ contract Congress {
             return;
         }
         revert();
+    }
+
+    function setToken(
+        MintableTokenStub _token
+    )
+        public
+        onlyVoters
+    {
+        require(_token != MintableTokenStub(0));
+        require(token == MintableTokenStub(0));
+        token = _token;
+        emit TokenSet(msg.sender, token);
     }
 
     /**
@@ -159,7 +169,7 @@ contract Congress {
         }
         if (isMajority(mintProposal[proposalHash].numberOfVotes)) {
             mintProposal[proposalHash].executed = true;
-            token.mint();
+            token.mint(to, amount);
             emit MintProposalExecuted(proposalHash, to, amount, batchCode);
         }
         return(true);
