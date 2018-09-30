@@ -1,4 +1,5 @@
 const {assertRevert} = require('./helpers/assertRevert');
+const {decodeLogs} = require('./helpers/decodeLogs');
 const Congress = artifacts.require('Congress');
 const Token = artifacts.require('UniGoldToken');
 
@@ -37,19 +38,6 @@ contract('Congress for UGCC', function ([_, ...accounts]) {
                 let otherToken = await Token.new(this.congress.address, {from: accounts[0]});
                 await assertRevert(this.congress.setToken(otherToken.address, {from: accounts[0]}));
                 await assertRevert(this.congress.setToken(0x0, {from: accounts[0]}));
-            });
-            it('voter can mint', async function () {
-                tx = await this.congress.mint(accounts[1], 10000, "first Batch", {from: accounts[0]});
-                //logs = tx['logs'];
-                //assert.equal(logs.length, 3);
-                //assert.equal(logs[0].event, 'MintProposalAdded');
-                //assert.equal(logs[1].event, 'MintProposalVoted');
-                //assert.equal(logs[2].event, 'MintProposalExecuted');
-                console.log(tx['tx']);
-                const receipt = await web3.eth.getTransactionReceipt(tx['tx']);
-                const logs = decodeLogs(receipt.logs, Congress, token.address);
-                logs.length.should.equal(1);
-                logs[0].event.should.equal('Transfer');
             });
         });
     });
