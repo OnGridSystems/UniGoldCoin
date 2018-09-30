@@ -1,12 +1,13 @@
 const {assertRevert} = require('./helpers/assertRevert');
-const UniGoldToken = artifacts.require('UniGoldTokenMock');
+const UniGoldToken = artifacts.require('UniGoldToken');
 
 contract('UniGoldToken', function ([_, owner, recipient, anotherAccount, accounts]) {
     const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+    const minter = anotherAccount;
 
     beforeEach(async function () {
-        this.token = await UniGoldToken.new();
-        await this.token.mint(owner, 100);
+        this.token = await UniGoldToken.new(minter, {from: owner});
+        await this.token.mint(owner, 100, {from: minter});
     });
 
     describe('total supply', function () {
@@ -73,11 +74,26 @@ contract('UniGoldToken', function ([_, owner, recipient, anotherAccount, account
 
         describe('when the recipient is the zero address', function () {
             const to = ZERO_ADDRESS;
-
             it('reverts', async function () {
                 await assertRevert(this.token.transfer(to, 100, {from: owner}));
             });
         });
+    });
+
+
+    describe('minting', function () {
+       it('another account cant mint', async function () {
+           await assertRevert(this.token.mint(owner, 100, {from: owner}));
+       });
+
+       it('minter can mint', async function () {
+           const totalSupply = await this.token.totalSupply();
+           let amount = 100;
+           await this.token.mint(owner, amount, {from: minter});
+           let newSupply = await this.token.totalSupply();
+           assert.equal(newSupply, +totalSupply + +amount);
+       });
+
     });
 
 });
