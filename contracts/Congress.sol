@@ -1,177 +1,239 @@
-pragma solidity ^0.4.16;
+pragma solidity ^0.4.24;
+
 
 /**
  * @title Abstract contract where privileged minting managed by governance
  */
 contract MintableTokenStub {
-    address public minter;
-    event Mint(address indexed to, uint256 amount);
+  address public minter;
 
-    function mint(address _to, uint256 _amount) public onlyMinter returns (bool)
-    {
-        emit Mint(_to, _amount);
-        return true;
-    }
+  event Mint(address indexed to, uint256 amount);
 
-    /**
-     * Constructor function
-     */
-    constructor (
-        address _minter
-    ) public {
-        minter = _minter;
-    }
+  /**
+   * Constructor function
+   */
+  constructor (
+    address _minter
+  ) public {
+    minter = _minter;
+  }
 
-    /**
-     * @dev Throws if called by any account other than the minter.
-     */
-    modifier onlyMinter() {
-        require(msg.sender == minter);
-        _;
-    }
+  /**
+   * @dev Throws if called by any account other than the minter.
+   */
+  modifier onlyMinter() {
+    require(msg.sender == minter);
+    _;
+  }
+
+  function mint(address _to, uint256 _amount)
+  public
+  onlyMinter
+  returns (bool)
+  {
+    emit Mint(_to, _amount);
+    return true;
+  }
+
 }
 
 
 /**
  * @title Congress contract
- * @dev idea based on congress contract from official Ethereum repo
- * See https://github.com/ethereum/ethereum-org/blob/master/solidity/dao-congress.sol
+ * @dev The Congress contract allows to execute certain actions (token minting in this case) via majority of votes.
+ * In contrast to traditional Ownable pattern, Congress protects the managed contract (token) against unfair behaviour
+ * of minority (for example, a single founder having one of the project keys has no power to mint the token until
+ * other(s) vote for the operation). Majority formula is voters/2+1. The voters list is formed dynamically through the
+ * voting. Voters can be added if current majority trusts new party. The party can be removed from the voters if it has
+ * been compromised (majority executes untrust operation on it to do this).
  */
-
 contract Congress {
-    uint public voters;
-    mapping (address => bool) public voter;
-    mapping (bytes32 => MintProposal) mintProposal;
-    mapping (address => TrustRecord) public trustRegistry;
-    MintableTokenStub public token;
+  // the number of active voters
+  uint public voters;
 
-    event TokenSet(address voter, address token);
-    event MintProposalAdded(bytes32 proposalHash, address to, uint amount, string batchCode);
-    event MintProposalVoted(bytes32 proposalHash, address voter, uint numberOfVotes);
-    event MintProposalExecuted(bytes32 proposalHash, address to, uint amount, string batchCode);
-    event TrustSet(address issuer, address subject);
-    event TrustUnset(address issuer, address subject);
-    event VoteGranted(address voter);
-    event VoteRevoked(address voter);
+  // given address is the voter or not
+  mapping(address => bool) public voter;
+
+  // Each proposal is stored in mapping by its hash (hash of mint arguments)
+  mapping(bytes32 => MintProposal) public mintProposal;
+
+  // Defines the level of other voters' trust for given address. If majority of current voters
+  // trusts the new member - it becomes the voter
+  mapping(address => TrustRecord) public trustRegistry;
+
+  // The governed token under Congress's control. Congress has the minter privileges on it.
+  MintableTokenStub public token;
+
+  // Event on initial token configuration
+  event TokenSet(address voter, address token);
+
+  // Proposal lifecycle events
+  event MintProposalAdded(
+    bytes32 proposalHash,
+    address to,
+    uint amount,
+    string batchCode
+  );
+
+  event MintProposalVoted(
+    bytes32 proposalHash,
+    address voter,
+    uint numberOfVotes
+  );
+
+  event MintProposalExecuted(
+    bytes32 proposalHash,
+    address to,
+    uint amount,
+    string batchCode
+  );
+
+  // Events emitted on trust claims
+  event TrustSet(address issuer, address subject);
+  event TrustUnset(address issuer, address subject);
+
+  // Events on adding-deleting voters
+  event VoteGranted(address voter);
+  event VoteRevoked(address voter);
+
+  // Stores the state of the proposal: executed or not (able to execute only once), number of Votes and
+  // the mapping of voters and their boolean vote. true if voted.
+  struct MintProposal {
+    bool executed;
+    uint numberOfVotes;
+    mapping(address => bool) voted;
+  }
+
+  // Stores the trust counter and the addresses who trusted the given voter(candidate)
+  struct TrustRecord {
+    uint256 totalTrust;
+    mapping(address => bool) trustedBy;
+  }
 
 
-    struct MintProposal {
-        bool executed;
-        uint numberOfVotes;
-        mapping (address => bool) voted;
+  // Modifier that allows only Voters to vote
+  modifier onlyVoters {
+    require(voter[msg.sender]);
+    _;
+  }
+
+  /**
+   * Constructor function
+   */
+  constructor () public {
+    voter[msg.sender] = true;
+    voters = 1;
+  }
+
+  /**
+   * @dev Determine does the given number of votes make majority of voters.
+   * @return true if given number is majority
+   */
+  function isMajority(uint256 votes) public view returns (bool) {
+    // ToDo SafeMath
+    return (votes >= voters / 2 + 1);
+  }
+
+  /**
+   * @dev Determine how many voters trust given address
+   * @param subject The address of trustee
+   * @return the number of trusted votes
+   */
+  function getTotalTrust(address subject) public view returns (uint256) {
+    return (trustRegistry[subject].totalTrust);
+  }
+
+  /**
+   * @dev Set the trust claim (msg.sender trusts subject)
+   * @param subject The trusted address
+   */
+  function trust(address _subject) public onlyVoters {
+    require(msg.sender != _subject);
+    require(token != MintableTokenStub(0));
+    if (!trustRegistry[_subject].trustedBy[msg.sender]) {
+      trustRegistry[_subject].trustedBy[msg.sender] = true;
+      trustRegistry[_subject].totalTrust += 1;
+      emit TrustSet(msg.sender, _subject);
+      if (!voter[_subject] && isMajority(trustRegistry[_subject].totalTrust)) {
+        voter[_subject] = true;
+        voters += 1;
+        emit VoteGranted(_subject);
+      }
+      return;
     }
+    revert();
+  }
 
-
-    struct TrustRecord {
-        uint256 totalTrust;
-        mapping (address => bool) trustedBy;
-    }
-
-
-    // Modifier that allows only shareholders to vote
-    modifier onlyVoters {
-        require(voter[msg.sender]);
-        _;
-    }
-
-    /**
-     * Constructor function
-     */
-    constructor () public {
-        voter[msg.sender] = true;
-        voters = 1;
-    }
-
-
-    function isMajority(uint256 votes) view public returns (bool) {
+  /**
+   * @dev Unset the trust claim (msg.sender now reclaims trust from subject)
+   * @param subject The address of trustee to revoke trust
+   */
+  function untrust(address _subject) public onlyVoters {
+    require(token != MintableTokenStub(0));
+    if (trustRegistry[_subject].trustedBy[msg.sender]) {
+      trustRegistry[_subject].trustedBy[msg.sender] = false;
+      trustRegistry[_subject].totalTrust -= 1;
+      emit TrustUnset(msg.sender, _subject);
+      if (voter[_subject] && !isMajority(trustRegistry[_subject].totalTrust)) {
+        voter[_subject] = false;
         // ToDo SafeMath
-        return (votes >=  voters / 2 + 1);
+        voters -= 1;
+        emit VoteRevoked(_subject);
+      }
+      return;
     }
+    revert();
+  }
 
-    function getTotalTrust(address subject) view public returns (uint256) {
-        return (trustRegistry[subject].totalTrust);
-    }
+  /**
+   * @dev Token and its governance should be locked to each other. Congress should be set as minter in token
+   * @param _token The address of governed token
+   */
+  function setToken(
+    MintableTokenStub _token
+  )
+  public
+  onlyVoters
+  {
+    require(_token != MintableTokenStub(0));
+    require(token == MintableTokenStub(0));
+    token = _token;
+    emit TokenSet(msg.sender, token);
+  }
 
-    function trust(address _subject) onlyVoters public {
-        require(msg.sender != _subject);
-        require(token != MintableTokenStub(0));
-        if (!trustRegistry[_subject].trustedBy[msg.sender]) {
-            trustRegistry[_subject].trustedBy[msg.sender] = true;
-            trustRegistry[_subject].totalTrust += 1;
-            emit TrustSet(msg.sender, _subject);
-            if (!voter[_subject] && isMajority(trustRegistry[_subject].totalTrust)) {
-                voter[_subject] = true;
-                // ToDo SafeMath
-                voters += 1;
-                emit VoteGranted(_subject);
-            }
-            return;
-        }
-        revert();
+  /**
+  * @dev Proxy function to vote and mint tokens
+  * @param to The address that will receive the minted tokens.
+  * @param amount The amount of tokens to mint.
+  * @param batchCode The detailed information on a batch.
+  * @return A boolean that indicates if the operation was successful.
+  */
+  function mint(
+    address to,
+    uint256 amount,
+    string batchCode
+  )
+  public
+  onlyVoters
+  returns (bool)
+  {
+    bytes32 proposalHash = keccak256(abi.encodePacked(to, amount, batchCode));
+    assert(!mintProposal[proposalHash].executed);
+    // ToDo safe math
+    if (!mintProposal[proposalHash].voted[msg.sender]) {
+      if (mintProposal[proposalHash].numberOfVotes == 0) {
+        emit MintProposalAdded(proposalHash, to, amount, batchCode);
+      }
+      // ToDo SafeMath
+      mintProposal[proposalHash].numberOfVotes += 1;
+      mintProposal[proposalHash].voted[msg.sender] = true;
+      emit MintProposalVoted(proposalHash, msg.sender, mintProposal[proposalHash].numberOfVotes);
     }
-
-    function untrust(address _subject) onlyVoters public {
-        require(token != MintableTokenStub(0));
-        if (trustRegistry[_subject].trustedBy[msg.sender]) {
-            trustRegistry[_subject].trustedBy[msg.sender] = false;
-            trustRegistry[_subject].totalTrust -= 1;
-            emit TrustUnset(msg.sender, _subject);
-            if (voter[_subject] && !isMajority(trustRegistry[_subject].totalTrust)) {
-                voter[_subject] = false;
-                // ToDo SafeMath
-                voters -= 1;
-                emit VoteRevoked(_subject);
-            }
-            return;
-        }
-        revert();
+    if (isMajority(mintProposal[proposalHash].numberOfVotes)) {
+      mintProposal[proposalHash].executed = true;
+      token.mint(to, amount);
+      emit MintProposalExecuted(proposalHash, to, amount, batchCode);
     }
-
-    function setToken(
-        MintableTokenStub _token
-    )
-        public
-        onlyVoters
-    {
-        require(_token != MintableTokenStub(0));
-        require(token == MintableTokenStub(0));
-        token = _token;
-        emit TokenSet(msg.sender, token);
-    }
-
-    /**
-    * @dev Proxy function to vote and mint tokens
-    * @param to The address that will receive the minted tokens.
-    * @param amount The amount of tokens to mint.
-    * @param batchCode The detailed information on a batch.
-    * @return A boolean that indicates if the operation was successful.
-    */
-    function mint(
-        address to,
-        uint256 amount,
-        string batchCode
-    )
-        public
-        onlyVoters
-        returns (bool)
-    {
-        bytes32 proposalHash = keccak256(abi.encodePacked(to, amount, batchCode));
-        assert(!mintProposal[proposalHash].executed);
-        // ToDo safe math
-        if (!mintProposal[proposalHash].voted[msg.sender]) {
-            if ( mintProposal[proposalHash].numberOfVotes == 0 ) {
-                emit MintProposalAdded(proposalHash, to, amount, batchCode);
-            }
-            // ToDo SafeMath
-            mintProposal[proposalHash].numberOfVotes += 1;
-            mintProposal[proposalHash].voted[msg.sender] = true;
-            emit MintProposalVoted(proposalHash, msg.sender, mintProposal[proposalHash].numberOfVotes);
-        }
-        if (isMajority(mintProposal[proposalHash].numberOfVotes)) {
-            mintProposal[proposalHash].executed = true;
-            token.mint(to, amount);
-            emit MintProposalExecuted(proposalHash, to, amount, batchCode);
-        }
-        return(true);
-    }
+    return (true);
+  }
 }
