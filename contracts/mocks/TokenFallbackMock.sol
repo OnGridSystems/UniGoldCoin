@@ -11,11 +11,9 @@ contract TokenFallbackMock {
   bytes public data;
   /**
   * @dev Set state when fallback is called
-  * @param _from address The address that is transferring the tokens
   * @param _value uint the amount of the specified token
-  * @param _data Bytes The data passed from the caller.
   */
-  function tokenFallback(address _from, uint _value, bytes _data) external {
+  function tokenFallback(address , uint _value, bytes _data) external {
     value = _value;
     data = _data;
   }

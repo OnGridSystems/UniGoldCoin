@@ -9,7 +9,7 @@ contract UniGoldCoinBurner {
     token = _token;
   }
 
-  function tokenFallback(address _from, uint _value, bytes _data) public {
+  function tokenFallback(address, uint _value, bytes) public {
     require(msg.sender == address(token));
     token.burn(_value);
   }
