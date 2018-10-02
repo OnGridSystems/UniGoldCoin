@@ -3,6 +3,10 @@ UniGoldCoin is indivisible token representing the right to reclaim physical gold
 The digital token gets created after physical gold coin batch got manufactured. 
 The creaton of the digital tokens governed by flexible governance scheme.
 
+Deployed on Ethereum mainnet:
+* Token: [0xe0B5a364F86DfC046A2A5387450dBe46a48027C1](https://etherscan.io/address/0xe0b5a364f86dfc046a2a5387450dbe46a48027c1)
+* Congress: [0x37f35f0F142c273CC2C94bc719e68cC81E757A28](https://etherscan.io/address/0x37f35f0f142c273cc2c94bc719e68cc81e757a28)
+
 ## Contracts
 ### Token
 * **Interface: ERC-223*** (ERC-20 compatible). ERC-20 is the most liquid form of the token 
