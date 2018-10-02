@@ -1,18 +1,23 @@
 pragma solidity ^0.4.24;
 
 import "./ERC223ReceivingContract.sol";
-import "./token/ERC20/BurnableToken.sol";
+import "./token/ERC20/BasicToken.sol";
+
 
 /**
  * @title ERC223
  * @dev Simpler version of ERC223
  * See https://github.com/ethereum/EIPs/issues/223
- * Recommended implementation of ERC 223: https://github.com/Dexaran/ERC223-token-standard/blob/Recommended/ERC223_Token.sol
  */
-contract ERC223Burnable is BurnableToken {
+contract ERC223 is BasicToken {
 
   //Extended transfer event
-  event Transfer(address indexed from, address indexed to, uint256 value, bytes data);
+  event Transfer(
+    address indexed from,
+    address indexed to,
+    uint256 value,
+    bytes data
+  );
 
   string public name;
   string public symbol;
@@ -20,16 +25,14 @@ contract ERC223Burnable is BurnableToken {
 
 
   /**
-    * @dev Transfer token for a specified address, ERC223
-    * @param _to The address to transfer to.
-    * @param _value The amount to be transferred.
+   * @dev Transfer token for a specified address, ERC223
+   * Standard function transfer similar to ERC20 transfer with no _data .
+   * Added due to backwards compatibility reasons .
+   * @param _to The address to transfer to.
+   * @param _value The amount to be transferred.
   */
-  // Standard function transfer similar to ERC20 transfer with no _data .
-  // Added due to backwards compatibility reasons .
   function transfer(address _to, uint _value) public returns (bool) {
 
-    //standard function transfer similar to ERC20 transfer with no _data
-    //added due to backwards compatibility reasons
     bytes memory empty;
     if (isContract(_to)) {
       return transferToContract(_to, _value, empty);
@@ -45,7 +48,6 @@ contract ERC223Burnable is BurnableToken {
   * @param _value The amount to be transferred.
   * @param _data User data.
   */
-  // Function that is called when a user or another contract wants to transfer funds .
   function transfer(address _to, uint _value, bytes _data) public returns (bool) {
 
     if (isContract(_to)) {
@@ -55,11 +57,13 @@ contract ERC223Burnable is BurnableToken {
     }
   }
 
-  //assemble the given address bytecode. If bytecode exists then the _addr is a contract.
+  /**
+  * @dev assemble the given address bytecode. If bytecode exists then the _addr is a contract.
+  * @param _addr The address to assert for existing bytecode.
+  */
   function isContract(address _addr) internal view returns (bool) {
     uint length;
     assembly {
-    //retrieve the size of the code on target address, this needs assembly
       length := extcodesize(_addr)
     }
     return (length > 0);
