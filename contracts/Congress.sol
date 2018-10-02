@@ -145,7 +145,7 @@ contract Congress {
 
   /**
    * @dev Set the trust claim (msg.sender trusts subject)
-   * @param subject The trusted address
+   * @param _subject The trusted address
    */
   function trust(address _subject) public onlyVoters {
     require(msg.sender != _subject);
@@ -166,7 +166,7 @@ contract Congress {
 
   /**
    * @dev Unset the trust claim (msg.sender now reclaims trust from subject)
-   * @param subject The address of trustee to revoke trust
+   * @param _subject The address of trustee to revoke trust
    */
   function untrust(address _subject) public onlyVoters {
     require(token != MintableTokenStub(0));
