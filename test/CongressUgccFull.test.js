@@ -1,5 +1,4 @@
 const {assertRevert} = require('./helpers/assertRevert');
-const {decodeLogs} = require('./helpers/decodeLogs');
 const Congress = artifacts.require('Congress');
 const Token = artifacts.require('UniGoldToken');
 

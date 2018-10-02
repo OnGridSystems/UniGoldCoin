@@ -1,4 +1,7 @@
 # UniGoldCoin and emission governance
+
+[![Build Status](https://travis-ci.org/OnGridSystems/UniGoldCoin.svg?branch=master)](https://travis-ci.org/OnGridSystems/UniGoldCoin)
+
 UniGoldCoin is indivisible token representing the right to reclaim physical gold coin. 
 The digital token gets created after physical gold coin batch got manufactured. 
 The creaton of the digital tokens governed by flexible governance scheme.
@@ -179,6 +182,16 @@ Voter1       Voter2       Voter3      Voter4      Voter5           Congress     
   |||          |||          |||         |||         |                 |                       |
 ```
 The configuration can be changed to any number of voters (_trust_ actions extend voters list, _untrust_ - collapse it).
+
+## Test
+
+Running tests
+```
+npm install
+npm run test
+```
+or see latest test results on [travis](https://travis-ci.org/OnGridSystems/UniGoldCoin)
+
 
 ## Authors
 * [Kirill Varlamov](https://github.com/ongrid)
