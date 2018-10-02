@@ -1,6 +1,10 @@
 pragma solidity ^0.4.24;
 
 
+import "./math/SafeMath.sol";
+
+
+
 /**
  * @title Abstract contract where privileged minting managed by governance
  */
@@ -48,6 +52,7 @@ contract MintableTokenStub {
  * been compromised (majority executes untrust operation on it to do this).
  */
 contract Congress {
+  using SafeMath for uint256;
   // the number of active voters
   uint public voters;
 
@@ -130,8 +135,7 @@ contract Congress {
    * @return true if given number is majority
    */
   function isMajority(uint256 votes) public view returns (bool) {
-    // ToDo SafeMath
-    return (votes >= voters / 2 + 1);
+    return (votes >= voters.div(2).add(1));
   }
 
   /**
@@ -152,11 +156,11 @@ contract Congress {
     require(token != MintableTokenStub(0));
     if (!trustRegistry[_subject].trustedBy[msg.sender]) {
       trustRegistry[_subject].trustedBy[msg.sender] = true;
-      trustRegistry[_subject].totalTrust += 1;
+      trustRegistry[_subject].totalTrust = trustRegistry[_subject].totalTrust.add(1);
       emit TrustSet(msg.sender, _subject);
       if (!voter[_subject] && isMajority(trustRegistry[_subject].totalTrust)) {
         voter[_subject] = true;
-        voters += 1;
+        voters = voters.add(1);
         emit VoteGranted(_subject);
       }
       return;
@@ -172,12 +176,12 @@ contract Congress {
     require(token != MintableTokenStub(0));
     if (trustRegistry[_subject].trustedBy[msg.sender]) {
       trustRegistry[_subject].trustedBy[msg.sender] = false;
-      trustRegistry[_subject].totalTrust -= 1;
+      trustRegistry[_subject].totalTrust = trustRegistry[_subject].totalTrust.sub(1);
       emit TrustUnset(msg.sender, _subject);
       if (voter[_subject] && !isMajority(trustRegistry[_subject].totalTrust)) {
         voter[_subject] = false;
         // ToDo SafeMath
-        voters -= 1;
+        voters = voters.sub(1);
         emit VoteRevoked(_subject);
       }
       return;
@@ -219,13 +223,11 @@ contract Congress {
   {
     bytes32 proposalHash = keccak256(abi.encodePacked(to, amount, batchCode));
     assert(!mintProposal[proposalHash].executed);
-    // ToDo safe math
     if (!mintProposal[proposalHash].voted[msg.sender]) {
       if (mintProposal[proposalHash].numberOfVotes == 0) {
         emit MintProposalAdded(proposalHash, to, amount, batchCode);
       }
-      // ToDo SafeMath
-      mintProposal[proposalHash].numberOfVotes += 1;
+      mintProposal[proposalHash].numberOfVotes = mintProposal[proposalHash].numberOfVotes.add(1);
       mintProposal[proposalHash].voted[msg.sender] = true;
       emit MintProposalVoted(proposalHash, msg.sender, mintProposal[proposalHash].numberOfVotes);
     }
