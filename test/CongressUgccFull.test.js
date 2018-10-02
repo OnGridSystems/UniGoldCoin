@@ -1,5 +1,5 @@
 const {assertRevert} = require('./helpers/assertRevert');
-const {decodeLogs} = require('./helpers/decodeLogs');
+const abiDecoder = require('abi-decoder');
 const Congress = artifacts.require('Congress');
 const Token = artifacts.require('UniGoldToken');
 
@@ -39,6 +39,39 @@ contract('Congress for UGCC', function ([_, ...accounts]) {
                 await assertRevert(this.congress.setToken(otherToken.address, {from: accounts[0]}));
                 await assertRevert(this.congress.setToken(0x0, {from: accounts[0]}));
             });
+
+            it('voter can mint', async function () {
+                let amount = 10000;
+                let batchCode = "first Batch";
+
+                let tx = await this.congress.mint(accounts[1], amount, batchCode, {from: accounts[0]});
+
+                const receipt = await web3.eth.getTransactionReceipt(tx['tx']);
+
+                abiDecoder.addABI(Congress.abi);
+                abiDecoder.addABI(Token.abi);
+
+                const decodedLogs = abiDecoder.decodeLogs(receipt.logs);
+
+                assert.isTrue(decodedLogs.length >= 3);
+                let llogs = decodedLogs.slice(-3);
+
+                let mintEvent = llogs[0];
+
+                assert.equal(mintEvent.name, 'Mint');
+                assert.equal(mintEvent.events[1].value, amount);
+
+                let transferEvent = llogs[1];
+                assert.equal(transferEvent.name, 'Transfer');
+                assert.equal(transferEvent.events[2].value, amount);
+
+                let mintProposalExecutedEvent = llogs[2];
+                assert.equal(mintProposalExecutedEvent.name, 'MintProposalExecuted');
+                assert.equal(mintProposalExecutedEvent.events[2].value, amount);
+                assert.equal(mintProposalExecutedEvent.events[3].value, batchCode);
+
+            });
+
         });
     });
 });
