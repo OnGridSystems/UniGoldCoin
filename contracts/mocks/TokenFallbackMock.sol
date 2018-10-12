@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 /**
 * @title Contract for testing the ERC223 token fallback
 * @dev This just sets the values passed in on the contract state

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import "./ERC223ReceivingContract.sol";
 import "./token/ERC20/BurnableToken.sol";
