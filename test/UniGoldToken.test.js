@@ -10,6 +10,27 @@ contract('UniGoldToken', function ([_, owner, recipient, anotherAccount, account
         await this.token.mint(owner, 100, {from: minter});
     });
 
+    describe('decimals', function () {
+        it('returns the decimals', async function () {
+            const decimals = await this.token.decimals();
+            assert.equal(decimals, 4);
+        });
+    });
+
+    describe('name', function () {
+        it('returns the decimals', async function () {
+            const name = await this.token.name();
+            assert.equal(name, "UniGoldCoin");
+        });
+    });
+
+    describe('symbol', function () {
+        it('returns the decimals', async function () {
+            const symbol = await this.token.symbol();
+            assert.equal(symbol, "UGCС");
+        });
+    });
+
     describe('total supply', function () {
         it('returns the total amount of tokens', async function () {
             const totalSupply = await this.token.totalSupply();

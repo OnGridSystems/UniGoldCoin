@@ -17,10 +17,7 @@ supported by the most crypto exchanges, both legacy and decentralized. ERC-223 s
 functionality of receiving contract and more automation. In this case, the token 
 can be burnt automatically when received, and we use this to guarantee its invalidation after
 owner claimed its physical coins;
-* **Decimals: 0** symbolizes the token indivisibility. We deliberately use zero decimal to
-guarantee physical coin never loss its fractions of value and will remain intact traversing 
-ecosystem. We are aware that some exchanges extract fees from the tokens, they won't list our token. 
-Anyway this implementation seems to have better liquidity than ERC-721 non-fungible tokens.
+* **Decimals: 4** 
 * **Symbol: UGCС**, UGC has been already used at the moment and we's like to have the 
 non-conflicting ticker code;
 * **Name: “UniGoldCoin”**;
