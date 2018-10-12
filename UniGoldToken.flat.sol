@@ -245,7 +245,7 @@ contract UniGoldToken is ERC223Burnable {
   address public minter;
   string public name = "UniGoldCoin";
   string public symbol = "UGCС";
-  uint8 public decimals = 0;
+  uint8 public decimals = 4;
 
   event Mint(address indexed to, uint256 amount);
 

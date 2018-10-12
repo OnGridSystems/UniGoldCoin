@@ -54,10 +54,8 @@ else
   start_ganache
 fi
 
-if [ "$SOLC_NIGHTLY" = true ]; then
-  echo "Downloading solc nightly"
-  wget -q https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/bin/soljson-nightly.js -O /tmp/soljson.js && find . -name soljson.js -exec cp /tmp/soljson.js {} \;
-fi
+echo "Downloading solc release v0.4.25"
+curl -q https://raw.githubusercontent.com/ethereum/solc-bin/gh-pages/bin/soljson-v0.4.25%2Bcommit.59dbf8f1.js -o /tmp/soljson.js && find . -name soljson.js -exec cp /tmp/soljson.js {} \;
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
   node_modules/.bin/solidity-coverage
