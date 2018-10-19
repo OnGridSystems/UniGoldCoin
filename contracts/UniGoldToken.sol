@@ -1,8 +1,8 @@
 pragma solidity ^0.4.25;
 
-import "./ERC223Burnable.sol";
+import "./token/ERC20/BurnableToken.sol";
 
-contract UniGoldToken is ERC223Burnable {
+contract UniGoldToken is BurnableToken {
   address public minter;
   string public name = "UniGoldCoin";
   string public symbol = "UGCС";
